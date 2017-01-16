@@ -1,7 +1,7 @@
 Incremental Failure Injection in C
 ==================================
 
-I've been programing in C for the past 20 years, and I discovered this technique about 8 years ago and it has significantly helped me reduce bugs in production code.  Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique allows me to encapsulate all the error handling into a single pattern that allows me to programatically inject errors into every possible error condition.
+Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.
 
 Single Exit Point and Error Handling Macros
 -------------------------------------------
@@ -35,7 +35,7 @@ int unix_sock_create_and_bind(const char *path, int *fd) {
     int err = 0;
     struct sockaddr_un addr = {};
     size_t sz = strlen(path);
-    int s = socket(AF_UNIX, SOCK_STREAM, 0);
+    int s = socket(AF_UNIX, SOCK_DGRAM, 0);
     TEST(err, s >= 0);
     addr.sun_family = AF_UNIX;
     TEST(err, sz <= sizeof(addr.sun_path));
@@ -49,25 +49,33 @@ CHECK(err):
     }
     return err;
 }
+```
 
 The function has a single return statement at the end, returning the `err` variable.
 
 Test with Failure Injection
 ----------------------------
 
-The main reason to use a standard macro for all the error handling is give me the ability to inject a failure any time that macro is evaluated.  To do incremental failure injection I wrote a simple test library.
+To do incremental failure injection I wrote a simple test library.
 
 ```C
-//TOASTER, a simple test library
+/**
+ * TOASTER, a simple library for incremental failure injection
+ */
 
-//return 0 only if check passes
+/**
+ * @retval, return 0 only if check passes
+ */
 int toaster_check(void);
 
-//run the test with `max` number checks passing until `test` returns 0
+/**
+ * run the test from 0 to `max` number checks passing until `test` returns 0
+ * @retval 0, if test returned 0
+ */
 int toaster_run(int max, int (*test)(void));
 ```
 
-Each time `toaster_check` is called its counter is decremented.  When the check counter  hits `0`, `toaster_check` returns a failure. `toaster_run` initializes the check counter from 0 up to `max` until `test` returns 0.
+Each time `toaster_check` is called its counter is decremented.  When the check counter  hits `0`, `toaster_check` returns 0 as failure. `toaster_run` initializes the check counter from 0 up to `max` until `test` returns 0.
 
 ```C
 int gcnt;
@@ -91,7 +99,7 @@ int toaster_run(int max, int (*test)(void)) {
     int i;
     int err = -1;
     for(i = 0; i <= max && err != 0; ++i) {
-        LOG(TRACE, "test count: %d", i);
+        TOASTER_LOG("test count: %d", i);
         //set the toaster_check counter to i
         toaster_set(i);
         err = test(); 
@@ -110,7 +118,7 @@ Now we can inject the `toaster_check` calls into every call to the `TEST` macro.
       if(!err) {\
         err = -1;\
       }\
-      LOG(DEBUG, "inject:%s", #expr); \
+      TOASTER_LOG("inject:%s", #expr); \
       goto CHECK(err); \
     } else
 #else 
@@ -119,16 +127,16 @@ Now we can inject the `toaster_check` calls into every call to the `TEST` macro.
 
 #define TEST(err, expr) \
   do {\
-    LOG(TRACE, "call:%s", #expr); \
+    TOASTER_LOG("call:%s", #expr); \
     TOASTER_INJECT_FAILURE(err, expr) \
     if(!(expr)) {\
       if(!err) {\
         err = -1;\
       }\
-      LOG(DEBUG, "fail:%s", #expr); \
+      TOASTER_LOG("fail:%s", #expr); \
       goto CHECK(err); \
     } else {\
-        LOG(TRACE, "pass:%s", #expr); \
+        TOASTER_LOG("pass:%s", #expr); \
     }\
   } while(0)
 
@@ -139,7 +147,7 @@ Since the test runs with an incremental number of `TEST` macros passing we are a
 
 Mock out external APIs
 ----------------------
-GNUs dlfcn defines an `RTLD_NEXT` macro that allows you to load the next symbol in the symbol list for a particular api.  So you can write tests that override the default implementation of an externally linked api.  This is funcitonally equivalent to using LD_PRELOAD.
+GNUs dlfcn defines an `RTLD_NEXT` macro that allows you to load the next symbol in the symbol list for a particular api.  So you can write tests that override the default implementation of an externally linked api.  This is funcitonally equivalent to using `LD_PRELOAD`.
 
 ```C
 #define _GNU_SOURCE
@@ -150,10 +158,11 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     if(!toaster_check()) {
         return real(sockfd, addr, addrlen);
     }
+    TOASTER_LOG("inject failure: bind");
     return -1;
 }
 ```
-Since `bind` was linked into the main program, that definition will be used by default.  I can use RTLD_NEXT to find the real defintion and programatically inject a failure into that call.
+Since `bind` was linked into the main program, that definition will be used by default.  I can use `RTLD_NEXT` to find the real defintion and programatically inject a failure into that call.
 
 Use valgrind!
 -------------
