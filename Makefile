@@ -64,11 +64,20 @@ $(DLLS):
 
 export GCOV_PREFIX=cov
 export GCOV_PREFIX_STRIP=$(words $(subst /, ,$(PWD)))
+
+VALGRIND=$(shell which valgrind)
+ifeq (,$(VALGRIND))
+VALGRINDCMD=#
+else
+VALGRINDCMD=$(VALGRIND) --leak-check=yes --error-exitcode=5 -q
+endif
+GCOV:=gcov
+
 $(COVS):
 	@mkdir -p $(@D)
-	valgrind --leak-check=yes --error-exitcode=5 -q $<
+	$(VALGRINDCMD) $<
 	mv *.gcno $(@D)/ || echo ok
-	gcov -r -c -b -o $(@D) $(notdir $(@:%.cov=%)) | tee $<.cov.out
+	$(GCOV) -r -c -b -o $(@D) $(notdir $(@:%.cov=%)) | tee $<.cov.out
 	mv *.gcov $(@D)/ || echo ok
 	@grep "Branches executed:100" $<.cov.out
 	@grep "Lines executed:100" $<.cov.out
