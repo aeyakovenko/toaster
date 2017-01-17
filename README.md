@@ -223,7 +223,7 @@ src/test.c:60:toaster:pass:s >= 0
 src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
 src/test.c:62:toaster:pass:sz <= sizeof(addr.sun_path)
 src/test.c:64:toaster:call:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
-src/test.c:41:toaster:inject failure: bind
+src/test.c:41:toaster:mock failure: bind
 ```
 
 Until the test eventually passes
