@@ -182,7 +182,7 @@ Valgrind is a great tool that will catch leaks and uninitialized memory access e
 Running the Example
 --------------------
 
-Simple `make` should run this code on most systems that have `gcc` and `gcov` installed.
+Simple `make` should run this code on most systems that have `gcc`, `gcov` and `valgrind` installed.
 
 ```bash
 Lines executed:100.00% of 49
