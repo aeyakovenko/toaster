@@ -192,26 +192,6 @@ Calls executed:96.67% of 30
 Creating 'test.c.gcov'
 ```
 
-The difference between incremental failure injection and no failure injection can be seen by modifying the `main` function to look like
-
-```C
-
-int main(int _argc, char * const _argv[]) {
-    assert(0 == toaster_run(test_talk));
-    return 0;
-}
-```
-
-The resulting output should be
-
-```bash
-Lines executed:89.80% of 49
-Branches executed:100.00% of 52
-Taken at least once:50.00% of 52
-Calls executed:86.67% of 30
-Creating 'test.c.gcov'
-```
-
 Each iteration of the test will inject a failure at the next failure point.
 
 ```bash
@@ -276,4 +256,25 @@ src/test.c:92:toaster:pass:0 == memcmp(addr.sun_path, "foo", strlen("foo"))
 src/test.c:93:toaster:call:0 == memcmp(send, recv, strlen(send))
 src/test.c:93:toaster:pass:0 == memcmp(send, recv, strlen(send))
 ```
+
+The difference between incremental failure injection and no failure injection can be seen by modifying the `main` function to look like
+
+```C
+
+int main(int _argc, char * const _argv[]) {
+    assert(0 == toaster_run(test_talk));
+    return 0;
+}
+```
+
+The resulting output should be
+
+```bash
+Lines executed:89.80% of 49
+Branches executed:100.00% of 52
+Taken at least once:50.00% of 52
+Calls executed:86.67% of 30
+Creating 'test.c.gcov'
+```
+
 
