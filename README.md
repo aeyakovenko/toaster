@@ -129,7 +129,7 @@ int toaster_check(void);
 int toaster_run_max(int max, int (*test)(void));
 ```
 
-Each time `toaster_check` is called its counter is decremented.  When the check counter  hits `0`, `toaster_check` returns 0 as failure. `toaster_run` initializes the check counter from 0 up to `max` until `test` returns 0.
+Each time `toaster_check` is called its counter is decremented.  When the `toaster_check` counter hits `0`, `toaster_check` will return -1 as a failure. `toaster_run_max` runs the `test` in a loop, with the `toaster_check` counter set from 0 up to `max` until the `test` succeeds.
 
 ```C
 int gcnt;
