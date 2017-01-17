@@ -1,7 +1,7 @@
 Incremental Failure Injection in C
 ==================================
 
-Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.  This approach is not as thorough as covering every branch by testing a large input space, but it allows a small number of tests to cover a large set of common programming bugs especially when combined with valgrind.
+Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.  This approach is not as thorough as covering every branch by testing a large input space, but it allows a small number of tests to cover a large set of common programming bugs, especially when combined with valgrind.
 
 Just run make to try it.
 
