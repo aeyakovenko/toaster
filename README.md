@@ -225,7 +225,7 @@ Use valgrind!
 valgrind --leak-check=yes --error-exitcode=5 -q ./test
 ```        
 
-Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory during a simulated failure.  Suck as a `free` of an uninitialized pointer that never got set during an error.
+Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory during a simulated failure.  Such as a `free` of an uninitialized pointer that never got set during an error.
 
 Running the Example
 --------------------
