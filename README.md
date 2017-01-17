@@ -185,6 +185,7 @@ Running the Example
 Simple `make` should run this code on most systems that have `gcc`, `gcov` and `valgrind` installed.
 
 ```bash
+$ make
 Lines executed:100.00% of 49
 Branches executed:100.00% of 52
 Taken at least once:84.62% of 52
@@ -270,6 +271,7 @@ int main(int _argc, char * const _argv[]) {
 The resulting output should be
 
 ```bash
+$ make
 Lines executed:89.80% of 49
 Branches executed:100.00% of 52
 Taken at least once:50.00% of 52
