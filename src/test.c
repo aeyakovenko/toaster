@@ -88,7 +88,7 @@ int test_talk(void) {
     len = sizeof(addr);
     TEST(err, 0 < recvfrom(b, recv, sizeof(recv), 0, (struct sockaddr*)&addr, &len));
 
-    TEST(err, len < sizeof(addr));
+    TEST(err, len <= sizeof(addr));
     TEST(err, 0 == memcmp(addr.sun_path, "foo", strlen("foo")));
     TEST(err, 0 == memcmp(send, recv, strlen(send)));
 
