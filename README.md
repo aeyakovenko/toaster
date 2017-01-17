@@ -32,7 +32,7 @@ The `TEST(err, expr)` macro tests if `expr` is true, if not it will `goto` to a 
 The `CHECK(err)` macro generates the `goto` label out of the `err` name.
 
 Example
-.......
+-------
 
 Simple function to create a unix tcp socket and bind to it.
 
