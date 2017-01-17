@@ -78,7 +78,7 @@ int toaster_check(void);
  * run the test from 0 to `max` number checks passing until `test` returns 0
  * @retval 0, if test returned 0
  */
-int toaster_run(int max, int (*test)(void));
+int toaster_run_max(int max, int (*test)(void));
 ```
 
 Each time `toaster_check` is called its counter is decremented.  When the check counter  hits `0`, `toaster_check` returns 0 as failure. `toaster_run` initializes the check counter from 0 up to `max` until `test` returns 0.
@@ -101,7 +101,7 @@ void toaster_end(void) {
     gcnt = 0;
     gset = 0;
 }
-int toaster_run(int max, int (*test)(void)) {
+int toaster_run_max(int max, int (*test)(void)) {
     int i;
     int err = -1;
     for(i = 0; i <= max && err != 0; ++i) {
@@ -177,5 +177,60 @@ Use valgrind!
 valgrind --leak-check=yes --error-exitcode=5 -q ./test
 ```        
 
-Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory during a simulated failure.
+Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory during a simulated failure.  Suck as a `free` of an uninitialized pointer that never got set during an error.
 
+Running the Example
+--------------------
+
+Simple `make` should run this code on most systems that have `gcc` and `gcov` installed.
+
+```bash
+Lines executed:100.00% of 49
+Branches executed:100.00% of 52
+Taken at least once:84.62% of 52
+Calls executed:96.67% of 30
+Creating 'test.c.gcov'
+```
+
+The difference between incremental failure injection and no failure injection can be seen by modifying the `main` function to look like
+
+```C
+
+int main(int _argc, char * const _argv[]) {
+    assert(0 == toaster_run(test_talk));
+    return 0;
+}
+```
+
+The resulting output should be
+
+```bash
+Lines executed:89.80% of 49
+Branches executed:100.00% of 52
+Taken at least once:50.00% of 52
+Calls executed:86.67% of 30
+Creating 'test.c.gcov'
+```
+
+License
+--------
+
+Copyright (c) 2017 <Anatoly Yakovenko> aeyakovenko@gmail.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
