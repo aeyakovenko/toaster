@@ -48,7 +48,7 @@ int socket(int domain, int type, int protocol) {
     if(!toaster_check()) {
         return real(domain, type, protocol);
     }
-    TOASTER_LOG("inject failure: sockdet");
+    TOASTER_LOG("inject failure: socket");
     return -1;
 }
 

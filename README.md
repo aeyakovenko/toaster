@@ -211,3 +211,69 @@ Taken at least once:50.00% of 52
 Calls executed:86.67% of 30
 Creating 'test.c.gcov'
 ```
+
+Each iteration of the test will inject a failure at the next failure point.
+
+```bash
+src/toaster.c:66:toaster:test count: 3
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:inject:sz <= sizeof(addr.sun_path)
+```
+
+```bash
+src/toaster.c:66:toaster:test count: 4
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:pass:sz <= sizeof(addr.sun_path)
+src/test.c:64:toaster:call:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:64:toaster:inject:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+```
+
+```bash
+src/toaster.c:66:toaster:test count: 5
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:pass:sz <= sizeof(addr.sun_path)
+src/test.c:64:toaster:call:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:41:toaster:inject failure: bind
+```
+
+Until the test eventually passes
+
+```bash
+src/toaster.c:66:toaster:test count: 17
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:pass:sz <= sizeof(addr.sun_path)
+src/test.c:64:toaster:call:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:64:toaster:pass:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:81:toaster:pass:!unix_sock_create_and_bind("foo", &a)
+src/test.c:82:toaster:call:!unix_sock_create_and_bind("bar", &b)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:pass:sz <= sizeof(addr.sun_path)
+src/test.c:64:toaster:call:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:64:toaster:pass:!bind(s, (struct sockaddr *)&addr, sizeof(addr))
+src/test.c:82:toaster:pass:!unix_sock_create_and_bind("bar", &b)
+src/test.c:87:toaster:call:strlen(send) == sendto(a, send, strlen(send), 0, (struct sockaddr*)&addr, sizeof(addr))
+src/test.c:87:toaster:pass:strlen(send) == sendto(a, send, strlen(send), 0, (struct sockaddr*)&addr, sizeof(addr))
+src/test.c:89:toaster:call:0 < recvfrom(b, recv, sizeof(recv), 0, (struct sockaddr*)&addr, &len)
+src/test.c:89:toaster:pass:0 < recvfrom(b, recv, sizeof(recv), 0, (struct sockaddr*)&addr, &len)
+src/test.c:91:toaster:call:len < sizeof(addr)
+src/test.c:91:toaster:pass:len < sizeof(addr)
+src/test.c:92:toaster:call:0 == memcmp(addr.sun_path, "foo", strlen("foo"))
+src/test.c:92:toaster:pass:0 == memcmp(addr.sun_path, "foo", strlen("foo"))
+src/test.c:93:toaster:call:0 == memcmp(send, recv, strlen(send))
+src/test.c:93:toaster:pass:0 == memcmp(send, recv, strlen(send))
+```
+
