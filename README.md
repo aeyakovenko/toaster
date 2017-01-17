@@ -37,6 +37,19 @@ src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
 src/test.c:62:toaster:inject:sz <= sizeof(addr.sun_path)
 src/test.c:81:toaster:fail:!unix_sock_create_and_bind("foo", &a)
 ```
+...
+```bash
+gcov -r -c -b -o cov test.c | tee cov/test.cov.out
+File 'src/test.c'
+Lines executed:100.00% of 49
+Branches executed:100.00% of 52
+Taken at least once:84.62% of 52
+Calls executed:96.67% of 30
+Creating 'test.c.gcov'
+```
+
+How does it work?
+=================
 
 Single Exit Point and Error Handling Macros
 -------------------------------------------
