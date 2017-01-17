@@ -212,7 +212,7 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     if(!toaster_check()) {
         return real(sockfd, addr, addrlen);
     }
-    TOASTER_LOG("inject failure: bind");
+    TOASTER_LOG("mock failure: bind");
     return -1;
 }
 ```
