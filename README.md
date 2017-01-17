@@ -1,7 +1,42 @@
 Incremental Failure Injection in C
 ==================================
 
-Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.  This approach is not as thorough as covering every branch by testing a large input space, but it allows a small number of tests to cover a large set of common programming bugs.
+Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.  This approach is not as thorough as covering every branch by testing a large input space, but it allows a small number of tests to cover a large set of common programming bugs especially when combined with valgrind.
+
+Just run make to try it.
+
+```bash
+$ make
+cc -o cov/test src/test.c out/toaster.o -MMD -MP -MF cov/test.d  -Iinc -fPIC -g -Wall -Werror -O3 -std=c99 -coverage -ldl -DTOASTER
+/usr/bin/valgrind --leak-check=yes --error-exitcode=5 -q cov/test
+src/toaster.c:66:toaster:test count: 0
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:81:toaster:inject:!unix_sock_create_and_bind("foo", &a)
+```
+```bash
+src/toaster.c:66:toaster:test count: 1
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:51:toaster:mock failure: socket
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:inject:s >= 0
+src/test.c:81:toaster:fail:!unix_sock_create_and_bind("foo", &a)
+```
+```bash
+src/toaster.c:66:toaster:test count: 2
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:inject:s >= 0
+src/test.c:81:toaster:fail:!unix_sock_create_and_bind("foo", &a)
+```
+```bash
+src/toaster.c:66:toaster:test count: 3
+src/test.c:81:toaster:call:!unix_sock_create_and_bind("foo", &a)
+src/test.c:60:toaster:call:s >= 0
+src/test.c:60:toaster:pass:s >= 0
+src/test.c:62:toaster:call:sz <= sizeof(addr.sun_path)
+src/test.c:62:toaster:inject:sz <= sizeof(addr.sun_path)
+src/test.c:81:toaster:fail:!unix_sock_create_and_bind("foo", &a)
+```
 
 Single Exit Point and Error Handling Macros
 -------------------------------------------
