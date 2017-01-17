@@ -311,7 +311,7 @@ The difference between incremental failure injection and no failure injection ca
 ```C
 
 int main(int _argc, char * const _argv[]) {
-    assert(0 == toaster_run(test_talk));
+    assert(0 == test_talk());
     return 0;
 }
 ```
