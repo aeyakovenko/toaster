@@ -1,14 +1,17 @@
 Incremental Failure Injection in C
 ==================================
 
-Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.
+Most of the challenge in writing bug free C code is dealing with safe error handling.  This technique encapsulates all the error handling into a single pattern that can be used to programatically inject errors into every possible error condition.  This approach is not as thorough as covering every branch by testing a large input space.  But it allows a small number of tests to cover a large set of common programming bugs.
 
 Single Exit Point and Error Handling Macros
 -------------------------------------------
 
-Here is a simple example of an error handling macro
+Many C functions are written with multiple exit points, and a wide range of error handling approaches.  If all the error handling code is standardized into a single pattern, it becomes easy to follow and programatically control.  Here is a simple example of an error handling macro
 
 ```C
+/**
+ * if expr is false, goto the CHECK(err) label.  Set err to -1 if it's 0.
+ */
 #define TEST(err, expr) \
     if(!(expr)) {\
       if(!err) {\
@@ -18,6 +21,9 @@ Here is a simple example of an error handling macro
     } 
   } while(0)
 
+/**
+ * CHECK(err) label.  Should alwasy be at the end of the function before cleanup routines.
+ */
 #define CHECK(err) __ ## err ## _test_check
 ```
 
@@ -40,7 +46,7 @@ int unix_sock_create_and_bind(const char *path, int *fd) {
     addr.sun_family = AF_UNIX;
     TEST(err, sz <= sizeof(addr.sun_path));
     memmove(addr.sun_apth, path, sz);
-    TEST(err, !bind(s, &addr, sizeof(addr)));
+    TEST(err, !bind(s, (struct sockaddr*)&addr, sizeof(addr)));
     *fd = s;
     s = -1;
 CHECK(err):
@@ -51,12 +57,12 @@ CHECK(err):
 }
 ```
 
-The function has a single return statement at the end, returning the `err` variable.
+The function has a single return statement at the end, returning the `err` variable.  Everything after the `CHECK(err)` label is cleanup code.  Follwing this pattern makes it really easy to spot the exit points in the function (there is only one at the end), the cleanup code, and all the possible error conditions.
 
 Test with Failure Injection
 ----------------------------
 
-To do incremental failure injection I wrote a simple test library.
+A simple counter can then be used to incrementally inject errors.  This is a library wrapping a counter for the maximum number of successes each test iteration will allow.
 
 ```C
 /**
@@ -143,11 +149,11 @@ Now we can inject the `toaster_check` calls into every call to the `TEST` macro.
 #define CHECK(err) __ ## err ## _test_check
 ```
 
-Since the test runs with an incremental number of `TEST` macros passing we are able to verify that our `unix_sock_create_and_bind` funciton can handle and error on line `TEST(err, s >= 0);`, and `TEST(err, !bind(s, &addr, sizeof(addr)));`. 
+Since the test runs with an incremental number of `TEST` macros passing we are able to verify that our `unix_sock_create_and_bind` function can handle and error on line `TEST(err, s >= 0);`, and `TEST(err, !bind(s, &addr, sizeof(addr)));`. 
 
 Mock out external APIs
 ----------------------
-GNUs dlfcn defines an `RTLD_NEXT` macro that allows you to load the next symbol in the symbol list for a particular api.  So you can write tests that override the default implementation of an externally linked api.  This is funcitonally equivalent to using `LD_PRELOAD`.
+GNUs dlfcn defines an `RTLD_NEXT` macro that allows you to load the next symbol in the symbol list for a particular api.  So you can write tests that override the default implementation of an externally linked api.  This is functionally equivalent to using `LD_PRELOAD`.
 
 ```C
 #define _GNU_SOURCE
@@ -162,7 +168,7 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     return -1;
 }
 ```
-Since `bind` was linked into the main program, that definition will be used by default.  I can use `RTLD_NEXT` to find the real defintion and programatically inject a failure into that call.
+Since `bind` was linked into the main program, that definition will be used by default.  I can use `RTLD_NEXT` to find the real definition and programatically inject a failure into that call.
 
 Use valgrind!
 -------------
@@ -171,5 +177,5 @@ Use valgrind!
 valgrind --leak-check=yes --error-exitcode=5 -q ./test
 ```        
 
-Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory durring a simulated failure.
+Valgrind is a great tool that will catch leaks and uninitialized memory access errors.  In combination with incremental failure injection, valgrind will spot any tests that have leaked memory during a simulated failure.
 

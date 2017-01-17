@@ -21,14 +21,36 @@
  * SOFTWARE.
  */
 
+#define _GNU_SOURCE
+#define TOASTER_SHOW_LOG
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <dlfcn.h>
 
 #include "toaster.h"
+/** mock for bind */
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    int (*real)(int, const struct sockaddr *, socklen_t) = dlsym(RTLD_NEXT, "bind");
+    if(!toaster_check()) {
+        return real(sockfd, addr, addrlen);
+    }
+    TOASTER_LOG("inject failure: bind");
+    return -1;
+}
+
+/** mock for socket*/
+int socket(int domain, int type, int protocol) {
+    int (*real)(int domain, int type, int protocol) = dlsym(RTLD_NEXT, "socket");
+    if(!toaster_check()) {
+        return real(domain, type, protocol);
+    }
+    TOASTER_LOG("inject failure: sockdet");
+    return -1;
+}
 
 int unix_sock_create_and_bind(const char *path, int *fd) {
     int err = 0;
@@ -59,13 +81,16 @@ int test_talk(void) {
     TEST(err, !unix_sock_create_and_bind("foo", &a));
     TEST(err, !unix_sock_create_and_bind("bar", &b));
 
-    memmove(addr.sun_path, "bar", strlen("bar"));
-    TEST(err, !sendto(a, send, strlen(send), 0, (struct sockaddr*)&addr, sizeof(addr)));
-    TEST(err, !recvfrom(b, recv, sizeof(recv), 0, (struct sockaddr*)&addr, &len));
+    addr.sun_family = AF_UNIX;
+    memmove(addr.sun_path, "bar", strlen("bar") + 1);
+    TEST(err, strlen(send) == sendto(a, send, strlen(send), 0,
+                                     (struct sockaddr*)&addr, sizeof(addr)));
+    len = sizeof(addr);
+    TEST(err, 0 < recvfrom(b, recv, sizeof(recv), 0, (struct sockaddr*)&addr, &len));
 
-    assert(len == strlen("foo"));
-    assert(0 == memcmp(addr.sun_path, "foo", strlen("foo")));
-    assert(0 == memcmp(send, recv, strlen(send)));
+    TEST(err, len < sizeof(addr));
+    TEST(err, 0 == memcmp(addr.sun_path, "foo", strlen("foo")));
+    TEST(err, 0 == memcmp(send, recv, strlen(send)));
 
 CHECK(err):
     if(-1 != a) {
@@ -74,10 +99,13 @@ CHECK(err):
     if(-1 != b) {
         close(b);
     }
+    /** cleanup socket files on exit */
+    unlink("foo");
+    unlink("bar");
     return err;
 }
 
 int main(int _argc, char * const _argv[]) {
-    assert(0 == toaster_run(1000, test_talk));
+    assert(0 == toaster_run_max(100, test_talk));
     return 0;
 }
